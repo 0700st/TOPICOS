@@ -50,14 +50,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="illustration">
             <div class="illustration-content">
                 <h1>¡Hola!</h1>
-                <p>Honor, trabajo y progreso. Bienvenido al sistema de gestión académica.</p>
+                <p>Sistema de control de asistencias.</p>
             </div>
         </div>
         
         <div class="form-container">
             <div class="form-header">
-                <h2>Acceso Administrativo</h2>
-                <p>Ingresa tus credenciales para gestionar el sistema</p>
+                <h2>Acceso Docente</h2>
+                <p>Ingresa tus credenciales para iniciar sesión</p>
                 <button class="theme-toggle" id="themeToggle">
                     <i class="fas fa-sun"></i>
                 </button>
@@ -77,7 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
                 
                 <div class="form-footer">
-                    <p>Sistema exclusivo para personal autorizado</p>
+                    <p>Sistema exclusivo para personal docente</p>
                 </div>
             </form>
         </div>

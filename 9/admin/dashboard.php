@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (actualizarDocente($id, $nombre, $email, $rol)) {
             $_SESSION['alert'] = ['type' => 'success', 'message' => 'Docente actualizado correctamente'];
-            header("Location: ".$_SERVER['PHP_SELF']);
+            $_SESSION['active_section'] = 'docentes'; // Establecer sección activa
+            header("Location: ".$_SERVER['PHP_SELF']."#docentes");
             exit();
         } else {
             $_SESSION['alert'] = ['type' => 'error', 'message' => 'Error al actualizar docente'];
@@ -59,7 +60,60 @@ if (isset($_GET['eliminar_docente'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['registrar_materia'])) {
+        $nombre = trim($_POST['nombre']);
+        $codigo = trim($_POST['codigo']);
+        $creditos = trim($_POST['creditos']);
+        $docente_id = trim($_POST['docente_id']);
+        
+        if (registrarMateria($nombre, $codigo, $creditos, $docente_id)) {
+            $_SESSION['alert'] = ['type' => 'success', 'message' => 'Materia registrada correctamente'];
+            header("Location: ".$_SERVER['PHP_SELF']);
+            exit();
+        } else {
+            $_SESSION['alert'] = ['type' => 'error', 'message' => 'Error al registrar docente'];
+            header("Location: ".$_SERVER['PHP_SELF']);
+            exit();
+        }
+    } elseif (isset($_POST['editar_materia'])) {
+        // Validar y sanitizar los inputs
+        $id = intval($_POST['id']);
+        $nombre = trim($_POST['nombre']);
+        $codigo = trim($_POST['codigo']);
+        $creditos = trim($_POST['creditos']);
+        $docente_id = trim($_POST['id_docente']);
+        if (actualizarMateria($id, $nombre, $codigo, $creditos, $docente_id)) {
+            $_SESSION['alert'] = ['type' => 'success', 'message' => 'Materia actualizada correctamente'];
+            $_SESSION['active_section'] = 'materias'; // Establecer sección activa
+            header("Location: ".$_SERVER['PHP_SELF']."#materias");
+            exit();
+
+        } else {
+            $_SESSION['alert'] = ['type' => 'error', 'message' => 'Error al actualizar materia'];
+            header("Location: ".$_SERVER['PHP_SELF']);
+            exit();
+        }
+
+}
+}
+// Procesar eliminación de docente
+if (isset($_GET['eliminar_materia'])) {
+    $id = intval($_GET['eliminar_materia']);
+    
+    if (eliminarMateria($id)) {
+        $_SESSION['alert'] = ['type' => 'success', 'message' => 'Materia eliminado correctamente'];
+        header("Location: ".$_SERVER['PHP_SELF']);
+        exit();
+    } else {
+        $_SESSION['alert'] = ['type' => 'error', 'message' => 'Error al eliminar materia'];
+        header("Location: ".$_SERVER['PHP_SELF']);
+        exit();
+    }
+}
+
 $docentes = obtenerDocentes();
+$materias = obtenerMateriasConDocentes();
 ?>
 
 
@@ -102,28 +156,28 @@ $docentes = obtenerDocentes();
     
     <!-- Sidebar -->
     <nav class="sidebar">
-        <a href="#" class="sidebar-item active">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-        </a>
-        
-        <div class="sidebar-section">
-            <a href="#docentes" class="sidebar-item" id="docentesTab">
-                <i class="fas fa-chalkboard-teacher"></i>
-                <span>Docentes</span>
-            </a>
-            <a href="#materias" class="sidebar-item" id="materiasTab">
-                <i class="fas fa-book"></i>
-                <span>Materias</span>
-            </a>
-        </div>
-        
-        <div class="sidebar-footer">
-    <a href="#" onclick="confirmarCierreSesion()" class="sidebar-item">
-        <span>Cerrar sesión</span>
+    <a href="#dashboard" class="sidebar-item active" id="dashboardTab">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
     </a>
-</div>
-    </nav>
+    
+    <div class="sidebar-section">
+        <a href="#docentes" class="sidebar-item" id="docentesTab">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Docentes</span>
+        </a>
+        <a href="#materias" class="sidebar-item" id="materiasTab">
+            <i class="fas fa-book"></i>
+            <span>Materias</span>
+        </a>
+    </div>
+    
+    <div class="sidebar-footer">
+        <a href="#" onclick="confirmarCierreSesion()" class="sidebar-item">
+            <span>Cerrar sesión</span>
+        </a>
+    </div>
+</nav>
     
     <!-- Main Content -->
     <main class="main-content">
@@ -139,6 +193,14 @@ $docentes = obtenerDocentes();
             <?php echo $mensaje_error; ?>
         </div>
         <?php endif; ?>
+        
+        <!-- Dashboard Section -->
+        <section id="dashboardSection" class="content-section" style="display: block;">
+        <div class="card">
+            <h2 class="card-title">Bienvenido, <?php echo $nombre_usuario; ?></h2>
+            <p class="card-text">Desde aquí puedes gestionar docentes y materias.</p>
+        </div>
+        </section>
         
         <!-- Docentes Section -->
         <section id="docentesSection" class="content-section" style="display: block;">
@@ -158,7 +220,7 @@ $docentes = obtenerDocentes();
                         <label class="form-label" for="docentePassword">Contraseña</label>
                         <input type="password" class="form-control" id="docentePassword" name="password" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">
+                    <button name="registrar_docente" type="submit" class="btn btn-primary">
                         Registrar Docente
                     </button>
                 </form>
@@ -186,15 +248,15 @@ $docentes = obtenerDocentes();
                                 <td><?php echo htmlspecialchars($docente['rol']); ?></td>
                                 <td>
                                     <div class="table-actions">
-                                        <button class="btn-edit btn-sm" onclick="abrirModalEditar(
-                                            <?php echo $docente['id']; ?>, 
-                                            '<?php echo htmlspecialchars($docente['nombre'], ENT_QUOTES); ?>',
-                                            '<?php echo htmlspecialchars($docente['email'], ENT_QUOTES); ?>',
-                                            '<?php echo htmlspecialchars($docente['rol'], ENT_QUOTES); ?>'
-                                        )">
-                                            Editar
-                                        </button>
-                                        <button class="btn-delete btn-sm" onclick="confirmarEliminacion(<?php echo $docente['id']; ?>)">
+                                    <button class="btn-edit btn-sm" onclick="abrirModalEditarDocente(
+    <?php echo $docente['id']; ?>, 
+    '<?php echo htmlspecialchars($docente['nombre'], ENT_QUOTES); ?>',
+    '<?php echo htmlspecialchars($docente['email'], ENT_QUOTES); ?>',
+    '<?php echo htmlspecialchars($docente['rol'], ENT_QUOTES); ?>'
+)">
+    Editar
+</button>
+                                        <button class="btn-delete btn-sm" onclick="confirmarEliminacion(<?php echo $docente['id']; ?>, 'docente')">
                                             Eliminar
                                         </button>
                                     </div>
@@ -240,7 +302,7 @@ $docentes = obtenerDocentes();
                 <?php endforeach; ?>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary">
+        <button name="registrarMateria" type="submit" class="btn btn-primary">
             Registrar Materia
         </button>
     </form>
@@ -266,8 +328,18 @@ $docentes = obtenerDocentes();
                 <td><?php echo $materia['creditos']; ?></td>
                 <td><?php echo $materia['docente_nombre'] ?? 'Sin asignar'; ?></td>
                 <td>
-                    <button class="btn-edit btn-sm">Editar</button>
-                    <button class="btn-delete btn-sm">Eliminar</button>
+                <button class="btn-edit btn-sm" onclick="abrirModalEditarMateria(
+                    <?php echo $materia['id']; ?>, 
+                    '<?php echo htmlspecialchars($materia['nombre'], ENT_QUOTES); ?>',
+                    '<?php echo htmlspecialchars($materia['codigo'], ENT_QUOTES); ?>',
+                    <?php echo $materia['creditos']; ?>,
+                    '<?php echo $materia['docente_id']; ?>'
+                    )">
+                    Editar
+                </button>
+                    <button class="btn-delete btn-sm" onclick="confirmarEliminacion(<?php echo $materia['id']; ?>, 'materia')">
+                        Eliminar
+                    </button>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -281,7 +353,7 @@ $docentes = obtenerDocentes();
     <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title">Editar Docente</h3>
-            <button class="modal-close" onclick="cerrarModalEditar()">&times;</button>
+            <button class="modal-close" onclick="cerrarModalEditarDocente()">&times;</button>
         </div>
         <form id="formEditarDocente" method="POST" action="">
             <input type="hidden" name="editar_docente" value="1">
@@ -305,7 +377,52 @@ $docentes = obtenerDocentes();
                 <button type="submit" class="btn btn-success" style="margin-right: 8px;">
                     Guardar Cambios
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="cerrarModalEditar()">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarDocente()">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Modal para editar docente -->
+<!-- Modal para editar docente -->
+<div id="editarMateriaModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Editar Materia</h3>
+            <button class="modal-close" onclick="cerrarModalEditarMateria()">&times;</button>
+        </div>
+        <form id="formEditarMateria" method="POST" action="">
+            <input type="hidden" name="editar_materia" value="1">
+            <input type="hidden" name="id" id="editarMateriaId">
+            <div class="form-group">
+                <label class="form-label" for="editarMateriaNombre">Nombre Materia</label>
+                <input type="text" class="form-control" id="editarMateriaNombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editarMateriaCodigo">Código Materia</label>
+                <input type="text" class="form-control" id="editarMateriaCodigo" name="codigo" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editarMateriaCreditos">Créditos Materia</label>
+                <input type="number" class="form-control" id="editarMateriaCreditos" name="creditos" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="editarMateriaDocente">Docente</label>
+                <select class="form-control" id="editarMateriaDocente" name="id_docente" required>
+                    <option value="">Seleccione un docente</option>
+                    <?php foreach (obtenerDocentesParaSelect() as $docente): ?>
+                        <option value="<?php echo $docente['id']; ?>">
+                            <?php echo htmlspecialchars($docente['nombre']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group" style="margin-top: 24px;">
+                <button type="submit" class="btn btn-success" style="margin-right: 8px;">
+                    Guardar Cambios
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarMateria()">
                     Cancelar
                 </button>
             </div>
@@ -378,26 +495,36 @@ $docentes = obtenerDocentes();
     // Tab Navigation, Modal functions, etc...
     
     // Confirmación de eliminación con SweetAlert2
-    function confirmarEliminacion(id) {
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        
-        Swal.fire({
-            title: '¿Estás seguro?',
-            text: "Esta acción eliminará al docente permanentemente",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            background: isDarkMode ? '#2d2d2d' : '#ffffff',
-            color: isDarkMode ? '#f8f9fa' : '#212529'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = `?eliminar_docente=${id}`;
-            }
-        });
-    }
+    function confirmarEliminacion(id, tipo) {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const textos = {
+        'docente': {
+            texto: "Esta acción eliminará al docente permanentemente",
+            url: `?eliminar_docente=${id}`
+        },
+        'materia': {
+            texto: "Esta acción eliminará la materia permanentemente",
+            url: `?eliminar_materia=${id}`
+        }
+    };
+
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: textos[tipo].texto,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        background: isDarkMode ? '#2d2d2d' : '#ffffff',
+        color: isDarkMode ? '#f8f9fa' : '#212529'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = textos[tipo].url;
+        }
+    });
+}
     function confirmarCierreSesion() {
     const isDarkMode = document.body.classList.contains('dark-mode');
     
@@ -454,9 +581,8 @@ function realizarLogout() {
             });
         });
 }
-// Abrir modal de edición
-// Abrir modal de edición
-function abrirModalEditar(id, nombre, email, rol) {
+// Funciones para el modal de docentes
+function abrirModalEditarDocente(id, nombre, email, rol) {
     const modal = document.getElementById("editarDocenteModal");
     document.getElementById("editarDocenteId").value = id;
     document.getElementById("editarDocenteNombre").value = nombre;
@@ -465,49 +591,99 @@ function abrirModalEditar(id, nombre, email, rol) {
     modal.style.display = "flex";
 }
 
-// Cerrar modal de edición
-function cerrarModalEditar() {
+
+// Funciones para el modal de materias
+function abrirModalEditarMateria(id, nombre, codigo, creditos, docente_id) {
+    const modal = document.getElementById("editarMateriaModal");
+    document.getElementById("editarMateriaId").value = id;
+    document.getElementById("editarMateriaNombre").value = nombre;
+    document.getElementById("editarMateriaCodigo").value = codigo;
+    document.getElementById("editarMateriaCreditos").value = creditos;
+    document.getElementById("editarMateriaDocente").value = docente_id;
+    modal.style.display = "flex";
+}
+
+function cerrarModalEditarMateria() {
+    const modal = document.getElementById("editarMateriaModal");
+    modal.style.display = "none";
+}
+
+// Función para cerrar el modal de docentes
+function cerrarModalEditarDocente() {
     const modal = document.getElementById("editarDocenteModal");
     modal.style.display = "none";
 }
 
-// Cerrar modal si se hace clic fuera del contenido
+// Cerrar modales al hacer clic fuera
 window.onclick = function(event) {
-    const modal = document.getElementById("editarDocenteModal");
-    if (event.target === modal) {
-        cerrarModalEditar();
+    const docenteModal = document.getElementById("editarDocenteModal");
+    const materiaModal = document.getElementById("editarMateriaModal");
+    
+    if (event.target === docenteModal) {
+        cerrarModalEditarDocente();
+    }
+    
+    if (event.target === materiaModal) {
+        cerrarModalEditarMateria();
     }
 };
 document.addEventListener('DOMContentLoaded', function() {
-    // Obtener elementos del DOM
-    const docentesTab = document.getElementById("docentesTab");
-    const materiasTab = document.getElementById("materiasTab");
-    const docentesSection = document.getElementById("docentesSection");
-    const materiasSection = document.getElementById("materiasSection");
+    // Obtener todas las pestañas y secciones
+    const tabs = {
+        dashboard: {
+            tab: document.getElementById("dashboardTab"),
+            section: document.getElementById("dashboardSection")
+        },
+        docentes: {
+            tab: document.getElementById("docentesTab"),
+            section: document.getElementById("docentesSection")
+        },
+        materias: {
+            tab: document.getElementById("materiasTab"),
+            section: document.getElementById("materiasSection")
+        }
+    };
 
-    // Manejar clic en pestaña Docentes
-    docentesTab.addEventListener("click", function(e) {
-        e.preventDefault();
-        // Mostrar sección de docentes y ocultar otras
-        docentesSection.style.display = "block";
-        materiasSection.style.display = "none";
-        
-        // Actualizar clases activas
-        docentesTab.classList.add("active");
-        materiasTab.classList.remove("active");
+    // Función para cambiar de sección
+    function cambiarSeccion(seccion) {
+        // Validar que la sección exista
+        if (!tabs[seccion]) return;
+
+        // Ocultar todas las secciones y desactivar pestañas
+        Object.keys(tabs).forEach(key => {
+            if (tabs[key].section) tabs[key].section.style.display = "none";
+            if (tabs[key].tab) tabs[key].tab.classList.remove("active");
+        });
+
+        // Mostrar sección seleccionada y activar su pestaña
+        if (tabs[seccion].section) tabs[seccion].section.style.display = "block";
+        if (tabs[seccion].tab) tabs[seccion].tab.classList.add("active");
+
+        // Actualizar URL y almacenamiento
+        history.pushState(null, null, `#${seccion}`);
+        sessionStorage.setItem('activeSection', seccion);
+    }
+
+    // Asignar eventos a las pestañas
+    Object.keys(tabs).forEach(seccion => {
+        if (tabs[seccion].tab) {
+            tabs[seccion].tab.addEventListener("click", function(e) {
+                e.preventDefault();
+                cambiarSeccion(seccion);
+            });
+        }
     });
 
-    // Manejar clic en pestaña Materias
-    materiasTab.addEventListener("click", function(e) {
-        e.preventDefault();
-        // Mostrar sección de materias y ocultar otras
-        materiasSection.style.display = "block";
-        docentesSection.style.display = "none";
-        
-        // Actualizar clases activas
-        materiasTab.classList.add("active");
-        docentesTab.classList.remove("active");
+    // Manejar cambios en el hash
+    window.addEventListener('hashchange', function() {
+        const hash = window.location.hash.substring(1);
+        if (tabs[hash]) cambiarSeccion(hash);
     });
+
+    // Determinar sección inicial
+    const seccionInicial = window.location.hash.substring(1) || 'dashboard';
+
+    cambiarSeccion(seccionInicial);
 });
 </script>
 

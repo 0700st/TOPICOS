@@ -452,14 +452,10 @@ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 background-color: #2d2d2d;
 color: #f8f9fa;
 }
+/* Estilo base para todas las secciones */
 .content-section {
+    display: none;
     transition: opacity 0.3s ease;
-}
-
-.content-section:not([style*="display: block"]) {
-    opacity: 0;
-    height: 0;
-    overflow: hidden;
 }
 
 .content-section[style*="display: block"] {
@@ -467,4 +463,3 @@ color: #f8f9fa;
     height: auto;
     overflow: visible;
 }
-

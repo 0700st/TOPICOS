@@ -157,4 +157,53 @@ function obtenerDocentesParaSelect() {
     
     return $docentes;
 }
+
+//Actualizar materia existente
+
+function actualizarMateria($id, $nombre, $codigo, $creditos, $docente_id) {
+    global $conexion;
+    
+    $sql = "UPDATE materias SET nombre = ?, codigo = ?, creditos = ?, docente_id = ? WHERE id = ?";
+    $stmt = $conexion->prepare($sql);
+    
+    if (!$stmt) {
+        error_log("Error al preparar la consulta: " . $conexion->error);
+        return false;
+    }
+    
+    $stmt->bind_param("ssiii", $nombre, $codigo, $creditos, $docente_id, $id);
+    $resultado = $stmt->execute();
+    
+    if (!$resultado) {
+        error_log("Error al ejecutar: " . $stmt->error);
+    }
+    
+    $stmt->close();
+    return $resultado;
+}
+
+/**
+ * Eliminar un docente
+ */
+function eliminarMateria($id) {
+    global $conexion;
+    
+    $sql = "DELETE FROM materias WHERE id = ?";
+    $stmt = $conexion->prepare($sql);
+    
+    if (!$stmt) {
+        error_log("Error al preparar la consulta: " . $conexion->error);
+        return false;
+    }
+    
+    $stmt->bind_param("i", $id);
+    $resultado = $stmt->execute();
+    
+    if (!$resultado) {
+        error_log("Error al ejecutar: " . $stmt->error);
+    }
+    
+    $stmt->close();
+    return $resultado;
+}
 ?>
